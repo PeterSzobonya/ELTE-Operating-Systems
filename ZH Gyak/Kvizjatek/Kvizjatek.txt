@@ -1,0 +1,27 @@
+Egy klasszikus televíziós kvízjáték veszi kezdetét. A műsor főcímdala után a "Kvízmester"
+(Szülő) lép a stúdióba. Ezt követi a kettő aznapi játékos (Gyerekek). Mindkét esetben
+Parancssori Argumentumként a program indításakor megadott nevek azonosítják a játékosokat.
+(Első argumentum az első játékos neve, második argumentum a második játékos neve, egyszerű
+keresztnevek. pl.: Béla Gizi) A "Kvízmester" vezeti a teljes műsort. (A szülő bevárja a gyerek
+folyamatokat.)
+
+1, A „Kvízmester”, amint a stúdióba lép, őt követően a kettő játékos is elfoglalja a helyét. Jelzést
+(Signal) küldve, hogy elfoglalták a helyeiket, ezek kiírásra is kerülnek, hogy a helyükön
+vannak. Ezt követően a kettő játékos bemutatkozik, elküldik a parancssori argumentumként
+kapott neveiket csővezetéken a "Kvízmesternek", aki megismétli a neveket - konzolra kiírásra
+kerülnek a nevek.
+
+2, A bemutatkozások után kezdetét veszi a játék. A "Kvízmester" felteszi az első kérdést
+üzenetsoron keresztül az első játékosnak, ami a következő: "Melyik operacios rendszert 
+hasznalja, aki .NET Framework -el dolgozik?" A kapott kérdést kiírja az első játékos (First
+Player: Uzenet kodja: valami, Kerdes: Melyik operacios rendszert hasznalja, aki .NET Framework -el dolgozik?
+ – vagy valamilyen hasonló formában) A kérdésre üzenetsoron válaszol az első játékos, ami a
+következő: "Microsoft Windows", amit a "Kvízmester" a játékoshoz hasonlóan kiírja a
+konzolra.
+
+3, A második játékos ezt követően osztott memóriába írja, hogy a "Microsoft Windows 10",
+szerinte ez lett volna a teljesen korrekt válasz. Ezt az első játékos kiolvassa az osztott
+memóriából és kiírja a konzolra. (Sec Player to First: "Microsoft Windows 10" - vagy valami
+hasonló módon.)
+
+4, Védje szemaforral az osztott memória használatát.
