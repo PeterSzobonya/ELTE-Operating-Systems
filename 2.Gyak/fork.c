@@ -31,10 +31,10 @@ int main()
    return 0;
 }
 
-//több process indításakor P -> C, akkor P-nek minden memóriája lemásolódik, így a gyerek
+//több process indításakor P -> C, akkor P-nek minden "memóriája lemásolódik", így a gyerek
 //a saját memória területén írja át az értéket, ha globális lenne a változó akkor is
 
-//ellenben a szál indítással, ahol átíródna
+//ellenben a szál indítással, ahol átíródna (bonyolultabb a helyzet elsősorban itt pl. Java esetén a voletile-ra és syncronized megoldásokra lehetne gondolni)
 
 //puttyban
 //ps -aux -> processzek kiirítása
