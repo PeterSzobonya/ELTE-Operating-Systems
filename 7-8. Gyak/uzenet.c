@@ -35,10 +35,22 @@ int szulo(int uzenetsor)
      // a 3. param ilyen is lehet: sizeof(uz.mtext)
      // a 4. parameter gyakran IPC_NOWAIT, ez a 0-val azonos
      /*
-     IPC_NOWAIT
+     IPC_NOWAIT röviden magyarul:
      Ha az üzenetsor megtelt, akkor az üzenetet nem írja a sorba, 
      és a vezérlés visszatér a hívási folyamathoz. Ha nincs megadva, 
      akkor a hívás folyamatát felfüggeszti (blokkolja), amíg az üzenet meg nem írható.
+	 
+	 Komolyabban:
+		The argument msgflg specifies the action to be taken if one or more of the following are true:	 
+			Placing the message on the message queue would cause the current number of bytes on the message queue (msg_cbytes) to exceed the maximum number of bytes allowed on this queue, as specified in msg_qbytes.
+			The total number of messages on the queue is equal to the system-imposed limit.
+		
+		These actions are as follows:
+		If the IPC_NOWAIT flag is on in msgflg, the message will not be sent and the calling process will return immediately. msgsnd() will return -1 and set errno to EAGAIN.
+		If the IPC_NOWAIT flag is off in msgflg, the calling process will suspend execution until one of the following occurs:
+			The condition responsible for the suspension no longer exists, in which case the message is sent.
+			The message queue identifier, msgid, is removed from the system; when this occurs, errno is set to EIDRM and a value of -1 is returned.
+			The calling process receives a signal that is to be caught; in this case a message is not sent and the calling process resumes execution. A value of -1 is returned and error is set to EINTR.
      */
      if (status < 0)
           perror("msgsnd");

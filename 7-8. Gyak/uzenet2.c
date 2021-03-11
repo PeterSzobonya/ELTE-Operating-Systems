@@ -20,7 +20,7 @@ int szulo(int uzenetsor)
 
     status = msgsnd(uzenetsor, &uz, strlen(uz.mtext) + 1, 0);
     // a 3. param ilyen is lehet: sizeof(uz.mtext)
-    // a 4. parameter gyakran IPC_NOWAIT, ez a 0-val azonos
+    // a 4. parameter gyakran IPC_NOWAIT, ez a 0-val azonos, bővebben az uzenet.c ben le van írva
     if (status < 0)
         perror("msgsnd");
 
@@ -39,7 +39,7 @@ int gyerek(int uzenetsor)
     int status;
     status = msgsnd(uzenetsor, &uz, strlen(uz.mtext) + 1, 0);
     // a 3. param ilyen is lehet: sizeof(uz.mtext)
-    // a 4. parameter gyakran IPC_NOWAIT, ez a 0-val azonos
+    // a 4. parameter gyakran IPC_NOWAIT, ez a 0-val azonos, bővebben az uzenet.c ben le van írva
     if (status < 0)
         perror("msgsnd");
 
