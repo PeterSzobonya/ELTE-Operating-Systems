@@ -31,6 +31,7 @@ int szulo(int uzenetsor)
      int status;
 
      // msgsnd(int msqid, const void *msgp, size_t msgsz, int msgflg);
+     // The third argument, msgsz, is the size of message (the message should end with a null character)
      status = msgsnd(uzenetsor, &uz, strlen(uz.mtext) + 1, 0);
      // a 3. param ilyen is lehet: sizeof(uz.mtext)
      // a 4. parameter gyakran IPC_NOWAIT, ez a 0-val azonos
