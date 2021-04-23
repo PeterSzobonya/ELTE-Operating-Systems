@@ -20,8 +20,15 @@ typedef struct
     int answer;
 } Question;
 
+struct Message
+{
+    long mtype;
+    char mguess;
+};
+
 pid_t mainProcessValue = 0;
 int ready = 0;
+int messageQueue;
 
 void startHandler(int sig)
 {
@@ -43,6 +50,29 @@ void generateQuestions(Question *questionArray[], const char *questionSentences[
     }
 }
 
+char *evaluate(int playerAnswer, int goodAnswer)
+{
+    char *result = malloc(2 * sizeof(char));
+    if (playerAnswer == goodAnswer)
+    {
+        printf("Valaszod: %u, Mikulast kapsz!\n", playerAnswer);
+        result[0] = 'j';
+        result[1] = '\0';
+    }
+    else
+    {
+        printf("Valszod: %u, Virgacsot kapsz!\n", playerAnswer);
+        result[0] = 'h';
+        result[1] = '\0';
+    }
+    return result;
+}
+
+int rand_id(int max)
+{
+    return rand() % max;
+}
+
 pid_t firstPlayer(int pipe_id_rec, int pipe_id_send)
 {
     pid_t process = fork();
@@ -62,6 +92,14 @@ pid_t firstPlayer(int pipe_id_rec, int pipe_id_send)
     srand(time(NULL));
     int r = rand() % 3;
     write(pipe_id_send, &randomNames[r], 10);
+
+    char question[50];
+    read(pipe_id_rec, &question, sizeof(question));
+    sleep(1);
+    srand(time(NULL));
+    int answer = (rand() % 5) + 1;
+    printf("Elso jatekos: Kapott kerdes: %s es erre a valaszom: %i\n", question, answer);
+    write(pipe_id_send, &answer, sizeof(answer));
 
     exit(0);
 }
@@ -86,6 +124,25 @@ pid_t secPlayer(int pipe_id_rec, int pipe_id_send)
     int r = rand() % 3;
     write(pipe_id_send, &randomNames[r], 10);
 
+    char question[50];
+    read(pipe_id_rec, &question, sizeof(question));
+    sleep(2);
+    srand(time(NULL));
+    int answer = (rand() % 5) + 1;
+    printf("Masodik jatekos: Kapott kerdes: %s es erre a valaszom: %i\n", question, answer);
+    write(pipe_id_send, &answer, sizeof(answer));
+
+    sleep(1);
+    char puffer;
+    puffer = rand_id(100) < 50 ? 'h' : 'j';
+    int status;
+    struct Message ms = {5, puffer};
+    status = msgsnd(messageQueue, &ms, sizeof(char), 0);
+    if (status < 0)
+    {
+        perror("msgsnd");
+    }
+
     exit(0);
 }
 
@@ -93,6 +150,17 @@ int main(int argc, char **argv)
 {
     mainProcessValue = getpid();
     signal(Alarcot_FEL, startHandler);
+
+    int status;
+    key_t mainKey;
+
+    mainKey = ftok(argv[0], 1);
+    messageQueue = msgget(mainKey, 0600 | IPC_CREAT);
+    if (messageQueue < 0)
+    {
+        perror("msgget");
+        return -1;
+    }
 
     int io_pipes[2];
     int succ = pipe(io_pipes);
@@ -154,6 +222,45 @@ int main(int argc, char **argv)
     int randomQuestion = rand() % 3;
     printf("Kerdes adatok: %s, %i, %i\n", questions[randomQuestion]->question, questions[randomQuestion]->answer, strlen(questions[randomQuestion]->question));
 
+    write(io_pipes[1], questions[randomQuestion]->question, strlen(questions[randomQuestion]->question));
+    write(io_pipes2[1], questions[randomQuestion]->question, strlen(questions[randomQuestion]->question));
+
+    int firstAnswer;
+    int secondAnswer;
+    char *firstResult;
+    char *secResult;
+    read(io_pipes1[0], &firstAnswer, sizeof(int));
+    printf("Elso jatekos valsza: %i\n", firstAnswer);
+    firstResult = evaluate(firstAnswer, questions[randomQuestion]->answer);
+    read(io_pipes3[0], &secondAnswer, sizeof(int));
+    printf("Masodik jatekos valsza: %i\n", secondAnswer);
+    secResult = evaluate(secondAnswer, questions[randomQuestion]->answer);
+
+    printf("Elso jatekos valasza ismetelen a kovetkezo: (jo / hamis) -> %s\n", firstResult);
+    evaluate(firstAnswer, questions[randomQuestion]->answer);
+    char *guessValue = malloc(2 * sizeof(char));
+    struct Message ms;
+    status = msgrcv(messageQueue, &ms, sizeof(char), 5, 0);
+    if (status < 0)
+    {
+        perror("msgrcv");
+    }
+    else
+    {
+        guessValue[0] = ms.mguess;
+        guessValue[1] = '\0';
+        printf("A kapott tipp a MASODIK jatekostol az eslore: %c\n", ms.mguess);
+    }
+
+    if (strcmp(firstResult, guessValue) == 0)
+    {
+        printf("A masodik jatekos sikeres valaszt adott! Jo valasz, mikulast kap!\n");
+    }
+    else
+    {
+        printf("A masodik jatekos nem jo valaszt adott! Rossz valasz, virgacsot kap!\n");
+    }
+
     wait(NULL);
     close(io_pipes[0]);
     close(io_pipes[1]);
@@ -163,5 +270,10 @@ int main(int argc, char **argv)
     close(io_pipes2[1]);
     close(io_pipes3[0]);
     close(io_pipes3[1]);
+    status = msgctl(messageQueue, IPC_RMID, NULL);
+    if (status < 0)
+    {
+        perror("msgctl");
+    }
     return 0;
 }
