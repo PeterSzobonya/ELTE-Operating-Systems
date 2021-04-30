@@ -1,6 +1,0 @@
-Gyakorlati ZH, 2019. december 12., 16 óra
-Itt a szakdolgozati témák bejelentési ideje. A hallgató (gyerek) beadja, feltölti a választott témát a Neptunba(szülő), amit a választott témavezető (gyerek) vagy elfogad vagy nem.
-2. A Neptun készen áll, létrehoz egy hallgató folyamatot, aki bejelenti csövön a szakdolgozati témát, a bejelentő az alábbi adatokat tartalmazza: Hallgató neve, Dolgozat címe, Beadás éve, Témavezető neve. A beérkezést követően a Neptun kiküldi a témavezetői kérést a témavezetőnek szintén csövön keresztül, aki kiírja a képernyőre az adatokat, majd befejeződik a program, szülő vár a gyerekek befejezésére.
-3. Miután a témavezető megkapja a Neptunból a felkérést, azt 60% eséllyel elutasítja, amiről SIG_NOT_ACCEPTED jelzést küld elutasítás, SIG_ACCEPTED jelzést küld elfogadás esetén a Neptunnak. Ezt az értesítést Neptun továbbküldi a hallgatónak, aki miután fogadja a jelzést kiírja, hogy a témát elfogadta a témavezető vagy nem. Ezután befejeződik a program.
-4. Ha a témavezető nem fogadta el a témát, akkor hallgató választhat kijelölt témavezetőt. Egy kijelölt témavezető nevet Neptun az osztott memóriába ír, ahonnan a hallgató kiveheti vagy új témavezetőt nevez meg. Ezt az eredményt hallgató írja ki, és a program fejeződjön be.
-5. Az osztott memóriába helyezett témavezetőt több hallgató is igénybe veheti, így azt védje szemaforral.

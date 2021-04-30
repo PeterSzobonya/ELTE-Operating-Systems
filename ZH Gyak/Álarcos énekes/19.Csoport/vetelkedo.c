@@ -26,9 +26,48 @@ struct Message
     char mguess;
 };
 
+struct sharedData
+{
+    int firstPlayerAnswer;
+    int secPlayerAnswer;
+};
+
 pid_t mainProcessValue = 0;
 int ready = 0;
 int messageQueue;
+int semid;
+struct sharedData *s;
+
+int semaphoreCreation(const char *pathname, int semaphoreValue)
+{
+    int semid;
+    key_t key;
+
+    key = ftok(pathname, 1);
+    if ((semid = semget(key, 1, IPC_CREAT | S_IRUSR | S_IWUSR)) < 0)
+        perror("semget");
+    if (semctl(semid, 0, SETVAL, semaphoreValue) < 0)
+        perror("semctl");
+
+    return semid;
+}
+
+void semaphoreOperation(int semid, int op)
+{
+    struct sembuf operation;
+
+    operation.sem_num = 0;
+    operation.sem_op = op;
+    operation.sem_flg = 0;
+
+    if (semop(semid, &operation, 1) < 0)
+        perror("semop");
+}
+
+void semaphoreDelete(int semid)
+{
+    semctl(semid, 0, IPC_RMID);
+}
 
 void startHandler(int sig)
 {
@@ -101,6 +140,11 @@ pid_t firstPlayer(int pipe_id_rec, int pipe_id_send)
     printf("Elso jatekos: Kapott kerdes: %s es erre a valaszom: %i\n", question, answer);
     write(pipe_id_send, &answer, sizeof(answer));
 
+    semaphoreOperation(semid, -1);
+    s->firstPlayerAnswer = answer;
+    semaphoreOperation(semid, 1);
+
+    shmdt(s);
     exit(0);
 }
 
@@ -143,6 +187,11 @@ pid_t secPlayer(int pipe_id_rec, int pipe_id_send)
         perror("msgsnd");
     }
 
+    semaphoreOperation(semid, -1);
+    s->secPlayerAnswer = answer;
+    semaphoreOperation(semid, 1);
+
+    shmdt(s);
     exit(0);
 }
 
@@ -161,6 +210,12 @@ int main(int argc, char **argv)
         perror("msgget");
         return -1;
     }
+
+    int sh_mem_id;
+    sh_mem_id = shmget(mainKey, sizeof(s), IPC_CREAT | S_IRUSR | S_IWUSR);
+    s = shmat(sh_mem_id, NULL, 0);
+
+    semid = semaphoreCreation(argv[0], 1);
 
     int io_pipes[2];
     int succ = pipe(io_pipes);
@@ -261,7 +316,14 @@ int main(int argc, char **argv)
         printf("A masodik jatekos nem jo valaszt adott! Rossz valasz, virgacsot kap!\n");
     }
 
+    semaphoreOperation(semid, -1);
+    printf("Elso jatekos leadott valasza: %i\n", s->firstPlayerAnswer);
+    printf("Masodik jatekos leadott valasza: %i\n", s->secPlayerAnswer);
+    semaphoreOperation(semid, 1);
+
+    shmdt(s);
     wait(NULL);
+    semaphoreDelete(semid);
     close(io_pipes[0]);
     close(io_pipes[1]);
     close(io_pipes1[0]);

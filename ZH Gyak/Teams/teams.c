@@ -12,12 +12,7 @@
 #include "sys/sem.h"
 #include "sys/stat.h"
 
-enum message
-{
-    counting
-};
-
-struct Message
+struct message
 {
     long mtype;
     char mtext[1024];
@@ -25,13 +20,13 @@ struct Message
 
 struct sharedData
 {
-    int point;
+    char text[1024];
 };
 
 pid_t mainProcessValue = 0;
-int ready = 0;
 int messageQueue;
 int semid;
+int start = 0;
 struct sharedData *s;
 
 int semaphoreCreation(const char *pathname, int semaphoreValue)
@@ -65,27 +60,19 @@ void semaphoreDelete(int semid)
     semctl(semid, 0, IPC_RMID);
 }
 
-void starthandler(int sig)
+void startHandler(int sig)
 {
     if (sig == SIGUSR1)
     {
-        ready++;
+        start++;
     }
-}
-
-int rand_point()
-{
-    srand(time(NULL));
-    return rand() % 10;
 }
 
 pid_t student(int pipe_id_rec, int pipe_id_send)
 {
     pid_t process = fork();
     if (process == -1)
-    {
         exit(-1);
-    }
     if (process > 0)
     {
         return process;
@@ -93,35 +80,57 @@ pid_t student(int pipe_id_rec, int pipe_id_send)
 
     kill(mainProcessValue, SIGUSR1);
 
-    enum message sign;
-    int counter = 1;
-    while (counter < 4)
-    {
-        read(pipe_id_rec, &sign, sizeof(enum message));
-        printf("Tanulo mondja: %i\n", counter);
-        counter++;
-    }
-
     int status;
-    struct Message ms = {5, "Mit csináljak?"};
+    struct message ms = {5, "Jo napot."};
     status = msgsnd(messageQueue, &ms, strlen(ms.mtext) + 1, 0);
     if (status < 0)
     {
         perror("msgsnd");
     }
-    struct Message msFromParent;
-    status = msgrcv(messageQueue, &msFromParent, 1024, 5, 0);
+
+    char puffer[50];
+    read(pipe_id_rec, puffer, sizeof(puffer));
+    printf("Oktatotol kapott kerdes: %s\n", puffer);
+
+    char newData[50] = "CFS";
+    semaphoreOperation(semid, -1);
+    strcpy(s->text, newData);
+    printf("Hallgato tag beirja a választ az osztott memoriaba: %s\n", newData);
+    semaphoreOperation(semid, 1);
+
+    shmdt(s);
+    exit(0);
+}
+
+pid_t teacher(int pipe_id_rec, int pipe_id_send)
+{
+    pid_t process = fork();
+    if (process == -1)
+        exit(-1);
+    if (process > 0)
+    {
+        return process;
+    }
+
+    kill(mainProcessValue, SIGUSR1);
+
+    int status;
+    struct message ms;
+    status = msgrcv(messageQueue, &ms, 1024, 5, 0);
     if (status < 0)
     {
         perror("msgrcv");
     }
     else
     {
-        printf("A kapott uzenet az oktatotol: kodja: %ld, szovege: %s, pidje: %i\n", msFromParent.mtype, msFromParent.mtext, mainProcessValue);
+        printf("A kapott üzenet a hallgatotol kodja: %ld, szovege:  %s \n", ms.mtype, ms.mtext);
     }
 
+    write(pipe_id_send, "Melyik a default ütemező a Linux rendszerben?", 50);
+
+    sleep(2);
     semaphoreOperation(semid, -1);
-    printf("Tanulo pontja: %i\n", s->point);
+    printf("Hallgato valasza: %s\n", s->text);
     semaphoreOperation(semid, 1);
 
     shmdt(s);
@@ -131,7 +140,7 @@ pid_t student(int pipe_id_rec, int pipe_id_send)
 int main(int argc, char **argv)
 {
     mainProcessValue = getpid();
-    signal(SIGUSR1, starthandler);
+    signal(SIGUSR1, startHandler);
 
     int status;
     key_t mainKey;
@@ -141,7 +150,7 @@ int main(int argc, char **argv)
     if (messageQueue < 0)
     {
         perror("msgget");
-        return -1;
+        return 1;
     }
 
     int sh_mem_id;
@@ -153,62 +162,48 @@ int main(int argc, char **argv)
     int io_pipes[2];
     int succ = pipe(io_pipes);
     if (succ == -1)
-    {
         exit(-1);
-    }
 
     int io_pipes1[2];
     int succ1 = pipe(io_pipes1);
     if (succ1 == -1)
-    {
         exit(-1);
-    }
 
-    student(io_pipes[0], io_pipes1[1]);
+    int io_pipes2[2];
+    int succ2 = pipe(io_pipes2);
+    if (succ2 == -1)
+        exit(-1);
 
-    while (ready < 1)
+    int io_pipes3[2];
+    int succ3 = pipe(io_pipes3);
+    if (succ3 == -1)
+        exit(-1);
+
+    teacher(io_pipes1[0], io_pipes[1]);
+    student(io_pipes2[0], io_pipes3[1]);
+
+    while (start < 1)
         ;
-    puts("Tanulás kezdés!");
+    puts("Teacher - start teams meeting");
+    while (start < 2)
+        ;
+    puts("Student - join teams meeting!");
 
-    enum message puffer = counting;
-    int mainCounter = 1;
-    while (mainCounter < 4)
-    {
-        sleep(1);
-        printf("Oktato mondja: %i\n", mainCounter);
-        write(io_pipes[1], &puffer, sizeof(enum message));
-        mainCounter++;
-    }
+    char puffer[50];
+    read(io_pipes[0], puffer, sizeof(puffer));
+    write(io_pipes2[1], puffer, sizeof(puffer));
 
-    struct Message ms;
-    status = msgrcv(messageQueue, &ms, 1024, 5, 0);
-    if (status < 0)
-    {
-        perror("msgsnd");
-    }
-    else
-    {
-        printf("A kapott uzenet az tanulotol: kodja: %ld, szovege: %s\n", ms.mtype, ms.mtext);
-    }
-    struct Message msToChild = {5, "Rántsd meg a zsinórt!"};
-    status = msgsnd(messageQueue, &msToChild, strlen(msToChild.mtext) + 1, 0);
-    if (status < 0)
-    {
-        perror("msgsnd");
-    }
-
-    int resultPoint = rand_point();
-    semaphoreOperation(semid, -1);
-    s->point = resultPoint;
-    semaphoreOperation(semid, 1);
-
-    shmdt(s);
+    wait(NULL);
     wait(NULL);
     semaphoreDelete(semid);
-    close(io_pipes[0]);
-    close(io_pipes[1]);
     close(io_pipes1[0]);
     close(io_pipes1[1]);
+    close(io_pipes[0]);
+    close(io_pipes[1]);
+    close(io_pipes2[0]);
+    close(io_pipes2[1]);
+    close(io_pipes3[0]);
+    close(io_pipes3[1]);
     status = msgctl(messageQueue, IPC_RMID, NULL);
     if (status < 0)
     {
